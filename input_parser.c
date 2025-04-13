@@ -1,31 +1,16 @@
 #include "head.h"
-#include <arpa/inet.h>
-
-#include <fcntl.h>
-#include <netdb.h>
 #include <netinet/in.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 
-int main(int argc, char *argv[]) {
+void domain_parser() {
   int no_of_ports;
   char address[WEB_ADDRESS];
 
   printf("Enter the name of the website for which you would like to scan the "
          "ports : \n");
   scanf("%s", address);
-
-  printf("Enter the number of ports for which you would like to scan : \n");
-  scanf("%d", &no_of_ports);
-
-  int port_value[no_of_ports];
-
-  for (int i = 0; i < no_of_ports; i++) {
-    printf("Enter the port number : \n");
-    scanf("%d", &port_value[i]);
-  }
 
   struct addrinfo
       input_hint; // this is basically the input you give in order to get some
@@ -37,10 +22,9 @@ int main(int argc, char *argv[]) {
       sizeof(
           input_hint)); // This function sets the memory of input_hint with 0's
 
-  input_hint.ai_family = AF_INET;  // For IPv4
-  input_hint.ai_family = AF_INET6; // For IPv6
+  input_hint.ai_family = AF_UNSPEC; // For IPv6 or IPv4
 
-  printf("Address passed to getaddrinfo: %s\n", address);
+  printf("\nAddress passed to getaddrinfo: %s\n", address);
 
   int status = getaddrinfo(address, NULL, &input_hint, &resultant);
   // This function returns the data related to the host name in the form of a
@@ -52,26 +36,37 @@ int main(int argc, char *argv[]) {
     printf("Something went wrong with the getaddrinfo !! \n");
     exit(1);
   }
-
+  int count = 1;
   struct addrinfo *temp = resultant;
   while (temp != NULL) {
 
     char address_string[INET6_ADDRSTRLEN];
     void *addr;
+    void *port1;
 
     if (temp->ai_family == AF_INET) {
       addr = &((struct sockaddr_in *)temp->ai_addr)->sin_addr;
+
     } else {
       addr = &((struct sockaddr_in6 *)temp->ai_addr)->sin6_addr;
     }
 
+    char x1[11];
+    if (temp->ai_socktype == 1) {
+      strcpy(x1, "TCP");
+    } else if (temp->ai_socktype == 2) {
+      strcpy(x1, "UDP");
+    } else {
+      strcpy(x1, "Raw socket");
+    }
+
     inet_ntop(temp->ai_family, addr, address_string, sizeof(address_string));
 
-    printf("Entry : \n");
+    printf("Entry %d: \n", count);
     printf("\tAddress: %s\n", address_string);
-    printf("\tType : %i\n", temp->ai_socktype);
-    printf("\tFamily:%i\n", temp->ai_family);
+    printf("\tType of connection : %s\n", x1);
     temp = temp->ai_next; // This is basically traverssing the linked list
+    count++;
   }
 
   freeaddrinfo(resultant); // This frees up the whole linked list
