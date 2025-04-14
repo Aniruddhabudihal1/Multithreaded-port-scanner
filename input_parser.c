@@ -1,9 +1,7 @@
 #include "head.h"
 
 void domain_parser() {
-  int no_of_ports;
   char address[WEB_ADDRESS];
-
   printf("Enter the name of the website for which you would like to scan the "
          "ports : \n");
   scanf("%s", address);
@@ -64,6 +62,5 @@ void domain_parser() {
     temp = temp->ai_next; // This is basically traverssing the linked list
     count++;
   }
-
   freeaddrinfo(resultant); // This frees up the whole linked list
 }

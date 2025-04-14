@@ -2,6 +2,7 @@
 #define _HEAD_H
 
 #include <arpa/inet.h>
+#include <errno.h>
 #include <netdb.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -10,9 +11,8 @@
 #include <sys/fcntl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <errno.h>
 #include <time.h>
+#include <unistd.h>
 
 #define WEB_ADDRESS 256
 #define MAX_THREADS 100
@@ -23,18 +23,10 @@
 
 // Structure to pass arguments to threads
 typedef struct {
-    char address[WEB_ADDRESS];
-    int start_port;
-    int end_port;
-    int thread_id;
+  char address[WEB_ADDRESS];
+  int start_port;
+  int end_port;
+  int thread_id;
 } ThreadArgs;
-
-// Function prototypes
-void domain_parser();
-void* port_scan_thread(void* args);
-void scan_target(const char* address, int start_port, int end_port, int num_threads);
-short socketCreate(void);
-int socketConnect(int hSocket, char* address, int serverPort);
-void defaultScan();
 
 #endif /* _HEAD_H */
