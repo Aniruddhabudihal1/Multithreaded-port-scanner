@@ -1,0 +1,230 @@
+I am trying to make a multithreaded port scanner 
+
+This is the head.h file :
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <pthread.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/fcntl.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#define WEB_ADDRESS 256
+
+
+
+This is the input_parser file :
+#include "head.h"
+
+void domain_parser() {
+  int no_of_ports;
+  char address[WEB_ADDRESS];
+
+  printf("Enter the name of the website for which you would like to scan the "
+         "ports : \n");
+  scanf("%s", address);
+
+  struct addrinfo
+      input_hint; // this is basically the input you give in order to get some
+                  // result and the following struct is the result
+  struct addrinfo *resultant;
+
+  memset(
+      &input_hint, 0,
+      sizeof(
+          input_hint)); // This function sets the memory of input_hint with 0's
+
+  input_hint.ai_family = AF_UNSPEC; // For IPv6 or IPv4
+
+  printf("\nAddress passed to getaddrinfo: %s\n", address);
+
+  int status = getaddrinfo(address, NULL, &input_hint, &resultant);
+  // This function returns the data related to the host name in the form of a
+  // struct with all ai_flags, ai_family and all
+  // This returns the resultant in the form of a linked list of information
+  // where the resultant is the head of the linked list
+
+  if (status != 0) {
+    printf("Something went wrong with the getaddrinfo !! \n");
+    exit(1);
+  }
+  int count = 1;
+  struct addrinfo *temp = resultant;
+  while (temp != NULL) {
+
+    char address_string[INET6_ADDRSTRLEN];
+    void *addr;
+    void *port1;
+
+    if (temp->ai_family == AF_INET) {
+      addr = &((struct sockaddr_in *)temp->ai_addr)->sin_addr;
+
+    } else {
+      addr = &((struct sockaddr_in6 *)temp->ai_addr)->sin6_addr;
+    }
+
+    char x1[11];
+    if (temp->ai_socktype == 1) {
+      strcpy(x1, "TCP");
+    } else if (temp->ai_socktype == 2) {
+      strcpy(x1, "UDP");
+    } else {
+      strcpy(x1, "Raw socket");
+    }
+
+    inet_ntop(temp->ai_family, addr, address_string, sizeof(address_string));
+
+    printf("Entry %d: \n", count);
+    printf("\tAddress: %s\n", address_string);
+    printf("\tType of connection : %s\n", x1);
+    temp = temp->ai_next; // This is basically traverssing the linked list
+    count++;
+  }
+
+  freeaddrinfo(resultant); // This frees up the whole linked list
+}
+
+This is the scanner.c file :
+
+#include "head.h"
+
+short socketCreate(void) {
+  short hSocket; // 2-byte data type
+  // Usage socket(domain, type, protocol) AF_INET = IPv4 Internet Protocols,
+  // SOCK_STREAM is 2 way connection-based byte stream
+  // protocol is 0 if a single protocol exists for a type
+  hSocket = socket(AF_INET, SOCK_STREAM, 0);
+  // == 0 if exist
+  if (hSocket == -1) {
+    printf("\nSocket creation failed\n");
+    printf("See Help \'port-scan -h\'\n");
+    abort();
+  }
+  return hSocket;
+}
+
+// Connect the socket
+int socketConnect(int hSocket, char *address, int serverPort) {
+
+  int iRetval = -1;
+
+  struct sockaddr_in remote = {0};
+
+  // address to connect to
+  remote.sin_addr.s_addr = inet_addr(address);
+
+  // ipv4 family of addresses
+  remote.sin_family = AF_INET;
+
+  // port to connect to
+  remote.sin_port = htons(serverPort);
+
+  iRetval =
+      connect(hSocket, (struct sockaddr *)&remote, sizeof(struct sockaddr_in));
+
+  return iRetval;
+}
+
+// Default scan
+void defaultScan() {
+
+  printf("Scanning the network for devices...\n");
+
+  printf("This will take some time\n");
+
+  // Create vars for IP address generation
+  int blockOne = 10;
+
+  int blockTwo, blockThree, blockFour;
+
+  // create a char array to store the completed address
+  char address[16];
+
+  // socket
+  int socket;
+
+  // trying some timeout stuff
+  struct timeval timeout;
+
+  timeout.tv_sec = 1;
+
+  timeout.tv_usec = 0;
+
+  int synRetries = 1;
+
+  do {
+    // call the function that creates the socket
+    socket = socketCreate();
+
+    // Trying timeout stuff
+    setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+
+    // *setsockopt(socket, IPPROTO_TCP, TCP_SYNCNT, &synRetries, sizeof(
+    // synRetries)); combine the block ints into a char array
+    sprintf(address, "%d.%d.%d.%d", blockOne, blockTwo, blockThree, blockFour);
+
+    // print addres confirmation
+    printf("\nADDRESS %s:", address);
+
+    // attempt a connection and print exists if the connection is successful
+    if (socketConnect(socket, address, 80) < 0) {
+
+      // shutdown socket after connection fail
+      shutdown(socket, 1);
+      printf(" does not exist\n");
+
+    } else {
+
+      printf(" exists\n");
+
+      // shutdown socket after connection success
+      shutdown(socket, 1);
+    }
+
+    // block iterations
+    blockFour++;
+
+    if (blockFour == 256) {
+
+      blockThree++;
+
+      blockFour = 0;
+    }
+
+    if (blockThree == 256) {
+
+      blockTwo++;
+
+      blockThree = 0;
+    }
+
+  } while (blockTwo <= 255);
+}
+
+this is the int main file 
+
+#include "head.h"
+#include "input_parser.c"
+#include "scanner.c"
+
+int main() {
+  int choice;
+  printf("Choose an option:\n1. Domain Port Scan\n2. Default Local Subnet "
+         "Scan\nEnter your choice: ");
+  scanf("%d", &choice);
+
+  if (choice == 1) {
+    domain_parser();
+  } else if (choice == 2) {
+    defaultScan();
+  } else {
+    printf("Invalid option selected.\n");
+  }
+
+  return 0;
+}
+
+leave the domain_parser file as is I want you to fix the other 2 files and get it to actually scan the ports using multithreding 
