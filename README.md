@@ -20,7 +20,7 @@ A fast and efficient port scanning tool written in C that allows for both target
 Clone the repository and compile using the provided makefile:
 
 ```bash
-git clone https://github.com/yourusername/port-scanner.git
+git clone https://github.com/Aniruddhabudihal1/port-scanner.git
 cd port-scanner
 make
 ```
