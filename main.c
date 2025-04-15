@@ -8,7 +8,7 @@ int main() {
   int choice;
   printf("Choose an option:\n");
   printf("1. Domain Port Scan\n");
-  printf("2. Default Local Subnet Scan\n");
+  printf("2. default Local Subnet Scan if you are lazy \n");
   printf("Enter your choice: ");
   scanf("%d", &choice);
 
